@@ -1,4 +1,6 @@
 import { HexMap } from '../core/hex-map.js';
+import { ThemeManager } from './theme-manager.js';
+
 
 /**
  * 路徑：hex-ground/js/ui/map-renderer.js
@@ -61,15 +63,22 @@ export class MapRenderer {
         const ctx = this.ctx;
         const width = this.canvas.width;
         const height = this.canvas.height;
+
+        // 从主题管理器获取背景渐变
+        const gradientColors = ThemeManager.getTheme().backgroundGradient;
         
         // 创建渐变背景
         const gradient = ctx.createLinearGradient(0, 0, width, height);
-        gradient.addColorStop(0, '#1a2a6c');
-        gradient.addColorStop(0.5, '#b21f1f');
-        gradient.addColorStop(1, '#1a2a6c');
+        gradient.addColorStop(0, gradientColors[0]);
+        gradient.addColorStop(0.5, gradientColors[1]);
+        gradient.addColorStop(1, gradientColors[2]);
         
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, width, height);
+        
+        // 绘制网格线 - 使用主题颜色
+        ctx.strokeStyle = ThemeManager.getTheme().gridLines;
+        ctx.lineWidth = 1;
         
         // 绘制网格线
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
@@ -116,19 +125,20 @@ export class MapRenderer {
      */
     drawHexRoom(room) {
         const ctx = this.ctx;
+        const theme = ThemeManager.getTheme();
         
-        // 绘制六边形
+        // 绘制六边形 - 使用主题颜色
         this.drawHexagon(
             room.x, 
             room.y, 
             room.size, 
-            room.hover ? '#e0f7fa' : '#ffffff', 
-            room.hover ? '#f1c40f' : '#3498db'
+            room.hover ? theme.roomFillHover : theme.roomFill,
+            room.hover ? theme.roomBorderHover : theme.roomBorder
         );
         
-        // 绘制房间编号
-        ctx.fillStyle = '#2c3e50';
-        ctx.font = `${Math.max(12, room.size/3)}px Arial`;
+        // 绘制房间编号 - 使用主题字体和颜色
+        ctx.fillStyle = theme.roomText;
+        ctx.font = `${theme.roomFontSize(room.size)}px ${theme.roomFont}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(room.id, room.x, room.y);
@@ -196,6 +206,7 @@ export class MapRenderer {
      */
     drawHexDoor(door, mode) {
         const ctx = this.ctx;
+        const theme = ThemeManager.getTheme();
         
         if (mode === 'game') {
             // 游戏模式下只绘制可用的门
@@ -210,18 +221,22 @@ export class MapRenderer {
         if (mode === 'edit') {
             if (door.isUsable) {
                 ctx.globalAlpha = 1.0;
+                ctx.fillStyle = theme.doorActive;
             } else {
                 ctx.globalAlpha = 0.5;
+                ctx.fillStyle = theme.doorInactive;
             }
             
             // 鼠标悬停效果
             if (door.hover) {
-                ctx.shadowColor = '#f1c40f';
+                ctx.shadowColor = theme.doorHover;
                 ctx.shadowBlur = 15;
             }
+        } else {
+            ctx.fillStyle = theme.doorActive;
         }
         
-        ctx.font = `20px Arial`;
+        ctx.font = `${theme.doorFontSize}px ${theme.doorFont}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('🚪', 0, 0);

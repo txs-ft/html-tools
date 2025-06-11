@@ -1,5 +1,7 @@
 import { MapRenderer } from './map-renderer.js';
 import { HexMap } from '../core/hex-map.js';
+import { ThemeManager } from './theme-manager.js';
+import stateManager from '../state/state-manager.js';
 
 /**
  * 路徑：hex-ground/js/ui/ui-controller.js
@@ -70,6 +72,9 @@ export class UIController {
         
         // 添加事件监听器
         this.setupEventListeners();
+
+        // 添加主题切换功能
+        this.addThemeSwitcher(); 
         
         // 初始绘制
         this.draw();
@@ -510,5 +515,56 @@ export class UIController {
         
         // 重绘以更新悬停效果
         this.draw();
+    }
+
+    /**
+     * 添加主题切换控件
+     */
+    addThemeSwitcher() {
+        const themeContainer = document.createElement('div');
+        themeContainer.className = 'theme-switcher';
+        themeContainer.style.position = 'absolute';
+        themeContainer.style.bottom = '15px';
+        themeContainer.style.right = '115px';
+        themeContainer.style.zIndex = '10';
+        themeContainer.style.display = 'flex';
+        themeContainer.style.gap = '10px';
+        
+        const themes = ThemeManager.getAvailableThemes();
+        themes.forEach(themeName => {
+            const theme = ThemeManager.themes[themeName];
+            const btn = document.createElement('button');
+            btn.className = 'theme-btn';
+            btn.title = theme.name;
+            btn.style.width = '30px';
+            btn.style.height = '30px';
+            btn.style.borderRadius = '50%';
+            btn.style.border = '2px solid white';
+            btn.style.cursor = 'pointer';
+            btn.style.background = theme.backgroundGradient[1];
+            btn.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
+            
+            btn.addEventListener('click', () => {
+                ThemeManager.setTheme(themeName);
+                this.renderer.draw(
+                    stateManager.get('mode'),
+                    stateManager.get('offset').x,
+                    stateManager.get('offset').y,
+                    stateManager.get('scale')
+                );
+                
+                // 更新按钮选中状态
+                document.querySelectorAll('.theme-btn').forEach(b => {
+                    b.style.transform = '';
+                    b.style.boxShadow = '0 2px 5px rgba(0,0,0,0.3)';
+                });
+                btn.style.transform = 'scale(1.2)';
+                btn.style.boxShadow = '0 0 10px rgba(255,255,255,0.8)';
+            });
+            
+            themeContainer.appendChild(btn);
+        });
+        
+        document.querySelector('.container').appendChild(themeContainer);
     }
 }
