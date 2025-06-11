@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"editor.letterSpacing": 2,
+		"editor.fontFamily": "LXGW WenKai Mono Light",
+		"editor.fontSize": 25,
+		"editor.wordWrap": "on"
+	}
+}

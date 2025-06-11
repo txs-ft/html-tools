@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>课堂二维码生成器</title>
+    <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs@gh-pages/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2980, #26d0ce);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: #333;
+            padding: 20px;
+            animation: gradientBG 15s ease infinite;
+            background-size: 400% 400%;
+        }
+        
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            margin: 0 auto;
+            background-color: rgba(255, 255, 255, 0.97);
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            background: linear-gradient(to right, #1a2980, #26d0ce);
+            color: white;
+            padding: 30px 25px;
+            text-align: center;
+            position: relative;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 12px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            font-size: 1.15rem;
+            opacity: 0.95;
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.6;
+            font-weight: 300;
+        }
+        
+        .input-area {
+            padding: 30px;
+            border-bottom: 1px solid #eee;
+            position: relative;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 140px;
+            padding: 20px;
+            font-size: 1.15rem;
+            border: 2px solid #1a2980;
+            border-radius: 15px;
+            resize: vertical;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #26d0ce;
+            box-shadow: 0 0 0 4px rgba(38, 208, 206, 0.3);
+        }
+        
+        .qr-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            min-height: 400px;
+        }
+        
+        #qrcode {
+            max-width: 90%;
+            max-height: 70vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 25px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+            transition: all 0.4s ease;
+        }
+        
+        #qrcode canvas {
+            width: 100% !important;
+            height: auto !important;
+            max-width: 600px;
+            border: 1px solid #eee;
+        }
+        
+        .instructions {
+            background: linear-gradient(to right, #f0f9ff, #e6f7ff);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 25px;
+            text-align: center;
+            border: 1px solid #cdeeff;
+            max-width: 650px;
+            width: 100%;
+        }
+        
+        .instructions h3 {
+            color: #1a2980;
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+        
+        .instructions ul {
+            text-align: left;
+            margin: 0 auto;
+            font-size: 1.05rem;
+            line-height: 1.75;
+            padding-left: 25px;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+            position: relative;
+        }
+        
+        .instructions li:before {
+            content: "•";
+            color: #26d0ce;
+            font-weight: bold;
+            display: inline-block; 
+            width: 1em;
+            margin-left: -1em;
+            font-size: 1.2em;
+        }
+        
+        .statistics {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 25px;
+            font-size: 1.15rem;
+            color: #1a2980;
+            font-weight: 600;
+            background: rgba(38, 208, 206, 0.15);
+            padding: 15px 30px;
+            border-radius: 50px;
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #1a2980;
+            margin-top: 5px;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 25px;
+            background: #f5f9ff;
+            color: #1a2980;
+            font-size: 0.95rem;
+            border-top: 1px solid #e0eeff;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(to right, #1a2980, #26d0ce);
+            color: white;
+            box-shadow: 0 4px 15px rgba(26, 41, 128, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(26, 41, 128, 0.4);
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: #1a2980;
+            border: 2px solid #1a2980;
+        }
+        
+        .btn-secondary:hover {
+            background: #f0f7ff;
+        }
+        
+        .btn-success {
+            background: linear-gradient(to right, #00b09b, #96c93d);
+            color: white;
+        }
+        
+        .loading {
+            display: none;
+            font-size: 1.2rem;
+            color: #1a2980;
+            margin-top: 15px;
+            font-weight: 500;
+        }
+        
+        .error-message {
+            color: #e74c3c;
+            background: #ffeded;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+            display: none;
+            max-width: 600px;
+            border: 1px solid #ffcccc;
+        }
+        
+        .shorten-section {
+            background: #e8f4ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            display: none;
+            text-align: center;
+            border: 1px solid #c0e0ff;
+        }
+        
+        .shorten-section p {
+            margin-bottom: 15px;
+            color: #1a2980;
+            font-weight: 500;
+        }
+        
+        #shortened-url {
+            font-weight: bold;
+            color: #1a2980;
+            word-break: break-all;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            margin: 10px 0;
+            display: none;
+        }
+        
+        .info-tag {
+            display: inline-block;
+            background: #1a2980;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+            
+            .input-area, .qr-container {
+                padding: 20px;
+            }
+            
+            textarea {
+                min-height: 120px;
+                padding: 15px;
+                font-size: 1.05rem;
+            }
+            
+            .statistics {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px;
+                border-radius: 15px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .container {
+                border-radius: 15px;
+            }
+            
+            header {
+                padding: 25px 15px;
+            }
+            
+            .instructions {
+                padding: 20px 15px;
+            }
+            
+            .instructions ul {
+                padding-left: 20px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>课堂二维码生成器</h1>
+            <p class="subtitle">输入文本内容，实时生成大尺寸二维码供学生扫描获取资料</p>
+        </header>
+        
+        <div class="input-area">
+            <textarea id="text-input" placeholder="請輸入要生成二維碼的文字內容（網址、作業要求、補充資料等）...">https://github.com/teacher-english/teaching-resources</textarea>
+            
+            <div class="error-message" id="error-message">
+                <p>内容过长，无法生成二维码！</p>
+                <p>建议内容长度不超过1000个字符</p>
+            </div>
+            
+            <div class="shorten-section" id="shorten-section">
+                <p>您的内容过长，建议使用URL缩短服务</p>
+                <button class="btn btn-success" id="shorten-btn">
+                    <i class="icon">🔗</i> 生成短链接
+                </button>
+                <div id="shortened-url"></div>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn btn-primary" id="generate-btn">
+                    <i class="icon">⚡</i> 生成二维码
+                </button>
+                <button class="btn btn-secondary" id="clear-btn">
+                    <i class="icon">🗑️</i> 清空内容
+                </button>
+            </div>
+        </div>
+        
+        <div class="qr-container">
+            <div id="qrcode"></div>
+            
+            <div class="loading" id="loading">
+                正在生成大尺寸二维码...
+            </div>
+            
+            <div class="instructions">
+                <h3>使用说明</h3>
+                <ul>
+                    <li>在上方文本框中输入任意文字内容</li>
+                    <li>点击生成按钮创建二维码（或自动实时生成）</li>
+                    <li>学生可使用任何扫码APP扫描获取内容</li>
+                    <li>支持中英文、数字、符号和URL</li>
+                    <li>最大支持约1000个字符 <span class="info-tag">新</span></li>
+                    <li>长内容可使用URL缩短功能 <span class="info-tag">新</span></li>
+                </ul>
+            </div>
+            
+            <div class="statistics">
+                <div class="stat-item">
+                    <span>内容长度</span>
+                    <span class="stat-value" id="char-count">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>二维码尺寸</span>
+                    <span class="stat-value"><span id="qr-width">0</span>×<span id="qr-height">0</span> px</span>
+                </div>
+                <div class="stat-item">
+                    <span>生成时间</span>
+                    <span class="stat-value"><span id="gen-time">0</span> ms</span>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>课堂工具集 © 2023 | 专为教学场景设计 | 无广告、无追踪、无数据收集</p>
+        </footer>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const textInput = document.getElementById('text-input');
+        const qrcodeElement = document.getElementById('qrcode');
+        const charCountElement = document.getElementById('char-count');
+        const qrWidthElement = document.getElementById('qr-width');
+        const qrHeightElement = document.getElementById('qr-height');
+        const genTimeElement = document.getElementById('gen-time');
+        const generateBtn = document.getElementById('generate-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const loadingElement = document.getElementById('loading');
+        const errorMessage = document.getElementById('error-message');
+        const shortenSection = document.getElementById('shorten-section');
+        const shortenBtn = document.getElementById('shorten-btn');
+        const shortenedUrlElement = document.getElementById('shortened-url');
+        
+        // 最大支持的字符数
+        const MAX_CHARACTERS = 1000;
+        
+        // 生成二维码的函数
+        function generateQRCode(text) {
+            // 隐藏错误信息
+            errorMessage.style.display = 'none';
+            shortenSection.style.display = 'none';
+            shortenedUrlElement.style.display = 'none';
+            
+            // 检查内容长度
+            if (text.length > MAX_CHARACTERS) {
+                errorMessage.style.display = 'block';
+                shortenSection.style.display = 'block';
+                qrcodeElement.innerHTML = '';
+                updateStatistics(0, 0, 0, text.length);
+                return;
+            }
+            
+            // 显示加载状态
+            loadingElement.style.display = 'block';
+            
+            // 清除现有的二维码
+            qrcodeElement.innerHTML = '';
+            
+            // 更新字符计数
+            const charCount = text.length;
+            charCountElement.textContent = charCount;
+            
+            // 根据内容长度动态调整二维码尺寸
+            let qrSize = Math.min(Math.max(250, Math.floor(charCount / 2) + 200), 600);
+            
+            // 记录开始时间
+            const startTime = performance.now();
+            
+            try {
+                // 创建新的二维码
+                new QRCode(qrcodeElement, {
+                    text: text,
+                    width: qrSize,
+                    height: qrSize,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H // 最高容错级别
+                });
+                
+                // 更新尺寸显示
+                qrWidthElement.textContent = qrSize;
+                qrHeightElement.textContent = qrSize;
+                
+                // 计算生成时间
+                const endTime = performance.now();
+                const genTime = Math.round(endTime - startTime);
+                genTimeElement.textContent = genTime;
+                
+                // 添加动画效果
+                qrcodeElement.style.transform = 'scale(1.03)';
+                setTimeout(() => {
+                    qrcodeElement.style.transform = 'scale(1)';
+                }, 300);
+            } catch (error) {
+                console.error("二维码生成错误:", error);
+                errorMessage.style.display = 'block';
+                errorMessage.innerHTML = `<p>二维码生成失败！</p><p>错误信息: ${error.message}</p>`;
+                updateStatistics(0, 0, 0, text.length);
+            }
+            
+            // 隐藏加载状态
+            loadingElement.style.display = 'none';
+        }
+        
+        // 更新统计信息
+        function updateStatistics(width, height, time, charCount) {
+            qrWidthElement.textContent = width;
+            qrHeightElement.textContent = height;
+            genTimeElement.textContent = time;
+            charCountElement.textContent = charCount;
+        }
+        
+        // 初始生成二维码
+        setTimeout(() => {
+            generateQRCode(textInput.value);
+        }, 500);
+        
+        // 监听输入变化
+        textInput.addEventListener('input', function() {
+            if(this.value.length > 0) {
+                generateQRCode(this.value);
+            } else {
+                qrcodeElement.innerHTML = '';
+                updateStatistics(0, 0, 0, 0);
+                errorMessage.style.display = 'none';
+                shortenSection.style.display = 'none';
+            }
+        });
+        
+        // 生成按钮事件
+        generateBtn.addEventListener('click', function() {
+            if(textInput.value.length > 0) {
+                generateQRCode(textInput.value);
+            } else {
+                alert('请输入要生成二维码的内容');
+            }
+        });
+        
+        // 清空按钮事件
+        clearBtn.addEventListener('click', function() {
+            textInput.value = '';
+            textInput.focus();
+            qrcodeElement.innerHTML = '';
+            updateStatistics(0, 0, 0, 0);
+            errorMessage.style.display = 'none';
+            shortenSection.style.display = 'none';
+            shortenedUrlElement.style.display = 'none';
+        });
+        
+        // 短链接生成函数
+        shortenBtn.addEventListener('click', async function() {
+            const longUrl = textInput.value;
+            if (!longUrl) return;
+            
+            try {
+                loadingElement.style.display = 'block';
+                shortenBtn.disabled = true;
+                
+                // 使用is.gd URL缩短服务
+                const response = await fetch(`https://is.gd/create.php?format=simple&url=${encodeURIComponent(longUrl)}`);
+                
+                if (response.ok) {
+                    const shortUrl = await response.text();
+                    if (shortUrl.startsWith('http')) {
+                        shortenedUrlElement.textContent = shortUrl;
+                        shortenedUrlElement.style.display = 'block';
+                        
+                        // 更新输入框内容为短链接
+                        textInput.value = shortUrl;
+                        generateQRCode(shortUrl);
+                    } else {
+                        throw new Error('URL缩短服务返回无效响应');
+                    }
+                } else {
+                    throw new Error('URL缩短服务请求失败');
+                }
+            } catch (error) {
+                console.error("URL缩短错误:", error);
+                errorMessage.style.display = 'block';
+                errorMessage.innerHTML = `<p>URL缩短失败！</p><p>错误信息: ${error.message}</p>`;
+            } finally {
+                loadingElement.style.display = 'none';
+                shortenBtn.disabled = false;
+            }
+        });
+        
+        // 窗口大小变化时重新生成（响应式）
+        window.addEventListener('resize', function() {
+            if(textInput.value.length > 0) {
+                generateQRCode(textInput.value);
+            }
+        });
+    </script>
+</body>
+</html>

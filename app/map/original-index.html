@@ -1,0 +1,1144 @@
+<!-- 原本的、需要重構的index.html -->
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>六边形网格地图编辑器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+        }
+        
+        body {
+            overflow: hidden;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+        }
+        
+        .container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        canvas {
+            display: block;
+            background: #0d1520;
+            max-width: 100%;
+            max-height: 100%;
+            cursor: move;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+        }
+        
+        .info {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .controls {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 10px;
+            z-index: 10;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 20px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .control-btn {
+            background: linear-gradient(145deg, #2c3e50, #1c2833);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .control-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+            background: linear-gradient(145deg, #3498db, #2980b9);
+        }
+        
+        .control-btn.active {
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+            box-shadow: 0 0 15px rgba(231, 76, 60, 0.6);
+        }
+
+        /* 文件输入隐藏 */
+        .hidden-file-input {
+            display: none;
+        }
+        
+        .header {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+        }
+        
+        h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            background: linear-gradient(to right, #3498db, #2ecc71);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            font-size: 16px;
+            opacity: 0.8;
+        }
+        
+        .mode-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(46, 204, 113, 0.3);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 10;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .mode-indicator.edit {
+            background: rgba(231, 76, 60, 0.3);
+        }
+        
+        .instructions {
+            position: absolute;
+            bottom: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            text-align: center;
+            max-width: 90%;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>六边形网格地图编辑器</h1>
+        <div class="subtitle">课堂游戏工具 - 点击门来启用/禁用通道</div>
+    </div>
+    
+    <div class="container">
+        <canvas id="gridCanvas"></canvas>
+        <div class="info">缩放: 鼠标滚轮或双指手势 | 平移: 鼠标拖动或单指滑动</div>
+        <div class="mode-indicator" id="modeIndicator">游戏模式</div>
+        <div class="instructions" id="instructions">编辑模式已激活！点击门来启用/禁用通道</div>
+        
+        <div class="controls">
+            <button class="control-btn" id="loadMap" title="加载地图">📁</button>
+            <button class="control-btn" id="saveMap" title="保存地图">💾</button>
+            <button class="control-btn" id="editMap" title="编辑地图">🗺</button>
+            <button class="control-btn" id="resetView" title="重置视图">↺</button>
+        </div>
+        <!-- 隐藏的文件输入元素 -->
+        <input type="file" id="fileInput" class="hidden-file-input" accept=".json">
+    </div>
+
+    <script>
+        // 配置参数
+        const BASE_HEX_SIZE = 60; // 基础六边形大小
+        const MIN_SCALE = 0.3;    // 最小缩放比例
+        const MAX_SCALE = 10.0;   // 最大缩放比例
+        const SCALE_MULTIPLIER = 2.0; // 缩放速度系数
+
+        /**
+        * 代表六邊形房間的一扇門
+        */
+        class HexDoor {
+            /**
+            * 創建一扇門
+            * @param {number} x - 門的X坐標
+            * @param {number} y - 門的Y坐標
+            * @param {number} angle - 門的角度(弧度)
+            * @param {HexRoom} room1 - 第一間房
+            * @param {HexRoom} room2 - 第二間房
+            */
+            constructor(x, y, angle, room1, room2) {
+                this.x = x;
+                this.y = y;
+                this.angle = angle;
+                this.isUsable = false;
+                this.room1 = room1;
+                this.room2 = room2;
+                this.hover = false;
+            }
+
+            /**
+             * 在ctx中把門畫出來
+             * @param {CanvasRenderingContext2D} ctx - 畫布
+             * @param {string} mode - 当前模式 ('game' 或 'edit')
+             */
+            draw(ctx, mode) {
+                if (mode === 'game') {
+                    // 游戏模式下只绘制可用的门
+                    if (!this.isUsable) return;
+                }
+                
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                
+                // 编辑模式下处理半透明效果
+                if (mode === 'edit') {
+                    if (this.isUsable) {
+                        ctx.globalAlpha = 1.0;
+                    } else {
+                        ctx.globalAlpha = 0.5;
+                    }
+                    
+                    // 鼠标悬停效果
+                    if (this.hover) {
+                        ctx.shadowColor = '#f1c40f';
+                        ctx.shadowBlur = 15;
+                    }
+                }
+                
+                ctx.font = `20px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('🚪', 0, 0);
+                ctx.restore();
+            }
+
+            /**
+             * 檢查點擊是否在門上
+             * @param {number} x - 點擊的X坐標
+             * @param {number} y - 點擊的Y坐標
+             * @param {number} threshold - 閾值距離
+             * @returns {boolean} 是否點擊到門
+             */
+            isPointInside(x, y, threshold) {
+                const dx = this.x - x;
+                const dy = this.y - y;
+                return Math.sqrt(dx * dx + dy * dy) < threshold;
+            }
+
+            /**
+             * 創建儲存用的數據
+             */
+            createSaveData() {
+                return {
+                    "room1": { "r": this.room1.row, "c": this.room1.col },
+                    "room2": { "r": this.room2.row, "c": this.room2.col }
+                };
+            }
+        }
+
+        /**
+        * 代表一個六邊形的房間，最多有六扇門
+        */
+        class HexRoom {
+            /**
+            * 創建一個六邊形房間
+            * @param {number} col - 列索引
+            * @param {number} row - 行索引
+            * @param {number} x - 中心點X坐標
+            * @param {number} y - 中心點Y坐標
+            * @param {number} size - 六邊形大小
+            */
+            constructor(col, row, x, y, size) {
+                this.col = col;
+                this.row = row;
+                this.x = x;
+                this.y = y;
+                this.size = size;
+                this.doors = [];
+                this.id = `${String.fromCharCode(65 + col)}${row + 1}`;
+                this.hover = false;
+            }
+
+            /**
+             * 在ctx中把房間畫出來
+             * @param {CanvasRenderingContext2D} ctx - 畫布
+             */
+            draw(ctx) {
+                // 绘制六边形
+                const fillColor = this.hover ? '#e0f7fa' : '#ffffff';
+                this.drawHexagon(ctx, this.x, this.y, this.size, fillColor, '#3498db');
+                
+                // 繪製房間編號
+                ctx.fillStyle = '#2c3e50';
+                ctx.font = `${Math.max(12, this.size/3)}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.id, this.x, this.y);
+                
+                // 鼠标悬停效果
+                if (this.hover) {
+                    ctx.strokeStyle = '#f1c40f';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    for (let i = 0; i < 6; i++) {
+                        const angle = Math.PI / 3 * i;
+                        const hx = this.x + this.size * Math.cos(angle);
+                        const hy = this.y + this.size * Math.sin(angle);
+                        if (i === 0) {
+                            ctx.moveTo(hx, hy);
+                        } else {
+                            ctx.lineTo(hx, hy);
+                        }
+                    }
+                    ctx.closePath();
+                    ctx.stroke();
+                }
+            }
+
+            // 绘制单个六边形
+            drawHexagon(ctx, x, y, size, fillColor, strokeColor) {
+                ctx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                    const angle = Math.PI / 3 * i;
+                    const hx = x + size * Math.cos(angle);
+                    const hy = y + size * Math.sin(angle);
+                    if (i === 0) {
+                        ctx.moveTo(hx, hy);
+                    } else {
+                        ctx.lineTo(hx, hy);
+                    }
+                }
+                ctx.closePath();
+                
+                if (fillColor) {
+                    ctx.fillStyle = fillColor;
+                    ctx.fill();
+                }
+                
+                if (strokeColor) {
+                    ctx.strokeStyle = strokeColor;
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            }
+            
+            /**
+             * 添加一扇門
+             * @param {HexDoor} door - 要添加的門
+             */
+            addDoor(door) {
+                this.doors.push(door);
+            }
+            
+            /**
+             * 檢查點擊是否在房間上
+             * @param {number} x - 點擊的X坐標
+             * @param {number} y - 點擊的Y坐標
+             * @returns {boolean} 是否點擊到房間
+             */
+            isPointInside(x, y) {
+                // 簡化為檢查點到六邊形中心的距離
+                const dx = this.x - x;
+                const dy = this.y - y;
+                return Math.sqrt(dx * dx + dy * dy) < this.size;
+            }
+        }
+
+        /**
+         * 代表一個六邊形網格地圖
+         */
+        class HexMap {
+            /**
+            * 創建一個六邊形網格地圖
+            * @param {number} cols - 列數
+            * @param {number} rows - 行數
+            * @param {number} hexSize - 六邊形大小
+            */
+            constructor(cols, rows, hexSize) {
+                this.cols = cols;
+                this.rows = rows;
+                this.hexSize = hexSize;
+                this.hexWidth = hexSize * 2;
+                this.hexHeight = hexSize * Math.sqrt(3);
+                this.rooms = [];
+                this.doors = [];
+                
+                this.createGrid();
+            }
+
+            /**
+             * 創建網格和門
+             */
+            createGrid() {
+                // 創建所有房間
+                for (let r = 0; r < this.rows; r++) {
+                    for (let c = 0; c < this.cols; c++) {
+                        // 計算中心點坐標
+                        const x = c * this.hexWidth * 0.75 + this.hexWidth / 2;
+                        const y = r * this.hexHeight + (c % 2) * (this.hexHeight / 2) + this.hexHeight / 2;
+                        
+                        const room = new HexRoom(c, r, x, y, this.hexSize);
+                        this.rooms.push(room);
+                    }
+                }
+                
+                // 創建門（相鄰房間之間）
+                for (let r = 0; r < this.rows; r++) {
+                    for (let c = 0; c < this.cols; c++) {
+                        // 先處理橫軸上的房門
+                        const room = this.getRoom(c, r);
+                        if (c < this.cols - 1) {
+                            if (c % 2 == 0) { // 雙數c
+                                const se = this.getRoom(c + 1, r);
+                                this.createDoorBetweenRooms(room, se, 0);
+                                if (r > 0) { // 非第一行
+                                    const ne = this.getRoom(c + 1, r - 1);
+                                    this.createDoorBetweenRooms(room, ne, 0);
+                                }
+                            } else { // 單數c
+                                const ne = this.getRoom(c + 1, r);
+                                this.createDoorBetweenRooms(room, ne, 0);
+                                if (r < this.rows - 1) {
+                                    const se = this.getRoom(c + 1, r + 1);
+                                    this.createDoorBetweenRooms(room, se, 0);
+                                }
+                            }
+                        }
+
+                        // 再處理縱軸上的房門
+                        const s = this.getRoom(c, r + 1);
+                        if (r < this.rows - 1) { // 這簡單：只要不是最底那行房間，只管添加南門便可！北門不用管！
+                            this.createDoorBetweenRooms(room, s, 0); 
+                        }
+                        // （視覺上，還是不要把🚪旋轉了，很怪！）
+                    }
+                }
+            }
+            
+            /**
+             * 在兩個房間之間創建一扇門
+             * @param {HexRoom} room1 - 第一個房間
+             * @param {HexRoom} room2 - 第二個房間
+             * @param {number} [angle = 0] - 門的角度
+             */
+            createDoorBetweenRooms(room1, room2, angle = 0) {
+                // 計算兩個房間之間的中點
+                const midX = (room1.x + room2.x) / 2;
+                const midY = (room1.y + room2.y) / 2;
+                
+                // 創建門
+                const door = new HexDoor(midX, midY, angle, room1, room2);
+                
+                // 添加到兩個房間
+                room1.addDoor(door);
+                room2.addDoor(door);
+                
+                // 添加到地圖門列表
+                this.doors.push(door);
+            }
+            
+            /**
+             * 獲取指定位置的房間
+             * @param {number} col - 列索引
+             * @param {number} row - 行索引
+             * @returns {HexRoom} 房間對象
+             */
+            getRoom(col, row) {
+                if (col < 0 || col >= this.cols || row < 0 || row >= this.rows) {
+                    return null;
+                }
+                return this.rooms[row * this.cols + col];
+            }
+
+            /**
+             * 在ctx中把地圖畫出來
+             * @param {CanvasRenderingContext2D} ctx - 畫布
+             * @param {string} mode - 当前模式 ('game' 或 'edit')
+             */
+            draw(ctx, mode) {
+                // 繪製所有房間
+                this.rooms.forEach(room => room.draw(ctx));
+                
+                // 繪製所有門（模式處理在HexDoor內部）
+                this.doors.forEach(door => door.draw(ctx, mode));
+            }
+            
+            /**
+             * 清除所有悬停状态
+             */
+            clearHover() {
+                this.rooms.forEach(room => room.hover = false);
+                this.doors.forEach(door => door.hover = false);
+            }
+        }
+
+        class UIController {
+            /**
+             * 创建UI控制器
+             * @param {HTMLCanvasElement} canvas - 画布元素
+             * @param {function} drawCallback - 绘制回调函数
+             * @param {function} createDefaultHexMap - 加载地图数据的回调函数
+             */
+            constructor(canvas, drawCallback, createDefaultHexMap) {
+                this.canvas = canvas;
+                this.ctx = canvas.getContext('2d');
+                this.drawCallback = drawCallback;
+                this.createDefaultHexMap = createDefaultHexMap;
+                
+                // 状态变量
+                this.scale = 1.0;
+                this.offsetX = 0;
+                this.offsetY = 0;
+                this.startX = 0;
+                this.startY = 0;
+                this.isDragging = false;
+                this.initialPinchDistance = null;
+                this.initialScale = 1.0;
+                this.mode = 'game'; // 'game' 或 'edit'
+                
+                // 配置参数
+                this.BASE_HEX_SIZE = 60;
+                this.MIN_SCALE = 0.3;
+                this.MAX_SCALE = 10.0;
+                this.SCALE_MULTIPLIER = 2.0;
+                
+                // 绑定方法以确保正确的this上下文
+                this.handleMouseDown = this.handleMouseDown.bind(this);
+                this.handleMouseMove = this.handleMouseMove.bind(this);
+                this.handleMouseUp = this.handleMouseUp.bind(this);
+                this.handleWheel = this.handleWheel.bind(this);
+                this.handleTouchStart = this.handleTouchStart.bind(this);
+                this.handleTouchMove = this.handleTouchMove.bind(this);
+                this.handleTouchEnd = this.handleTouchEnd.bind(this);
+                this.handleClick = this.handleClick.bind(this);
+                this.handleMouseMoveHover = this.handleMouseMoveHover.bind(this);
+                this.adjustZoom = this.adjustZoom.bind(this);
+                this.resetView = this.resetView.bind(this);
+                this.initLoadMap = this.initLoadMap.bind(this);
+                this.initSaveMap = this.initSaveMap.bind(this);
+                this.editMap = this.editMap.bind(this);
+            }
+            
+            /**
+             * 初始化UI控制器
+             */
+            init() {
+                // 添加控件事件
+                document.getElementById('resetView').addEventListener('click', this.resetView);
+                document.getElementById('loadMap').addEventListener('click', this.initLoadMap);
+                document.getElementById('saveMap').addEventListener('click', this.initSaveMap);
+                document.getElementById('editMap').addEventListener('click', this.editMap);
+                
+                // 加载地图数据
+                this.createDefaultHexMap();
+                
+                // 添加事件监听器
+                this.setupEventListeners();
+                
+                // 初始绘制
+                this.draw();
+                
+                // 5秒后淡出信息提示
+                setTimeout(() => {
+                    document.querySelector('.info').style.opacity = '0';
+                }, 5000);
+            }
+
+            /**
+             * 初始化加载地图
+             */
+            initLoadMap() {
+                // 触发隐藏的文件输入
+                document.getElementById('fileInput').click();
+            }
+
+            /**
+             * 初始化保存地图
+             */
+            initSaveMap() {
+                // 获取当前地图数据
+                const mapData = {
+                    size: {
+                        w: cols,
+                        h: rows
+                    },
+                    doors: []
+                };
+
+                // 收集所有门的数据
+                if (hexMap) {
+                    for (const door of hexMap.doors) {
+                        // 不是真能用的門，便不用存到JSON中去
+                        if (!door.isUsable) continue;
+
+                        mapData.doors.push({
+                            room1: { r: door.room1.row, c: door.room1.col },
+                            room2: { r: door.room2.row, c: door.room2.col }
+                        })
+                    }
+                } else {
+                    alert('地图格式错误，下载失败');
+                    return;
+                }
+
+                // 创建JSON文件并下载
+                const jsonStr = JSON.stringify(mapData, null, 2);
+                const blob = new Blob([jsonStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'hex-map.json';
+                document.body.appendChild(a);
+                a.click();
+                
+                // 清理
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 0);
+            }
+
+            /**
+             * 切换地图编辑模式
+             */
+            editMap() {
+                if (this.mode === 'game') {
+                    this.mode = 'edit';
+                    document.getElementById('editMap').classList.add('active');
+                    document.getElementById('modeIndicator').textContent = '编辑模式';
+                    document.getElementById('modeIndicator').classList.add('edit');
+                    document.getElementById('instructions').style.display = 'block';
+                    
+                    // 5秒后淡出说明
+                    setTimeout(() => {
+                        document.getElementById('instructions').style.opacity = '0';
+                    }, 5000);
+                } else {
+                    this.mode = 'game';
+                    document.getElementById('editMap').classList.remove('active');
+                    document.getElementById('modeIndicator').textContent = '游戏模式';
+                    document.getElementById('modeIndicator').classList.remove('edit');
+                    document.getElementById('instructions').style.display = 'none';
+                    document.getElementById('instructions').style.opacity = '1';
+                }
+                
+                // 清除所有悬停状态
+                if (hexMap) hexMap.clearHover();
+                this.draw();
+            }
+            
+            /**
+             * 设置事件监听器
+             */
+            setupEventListeners() {
+                // 鼠标事件
+                this.canvas.addEventListener('mousedown', this.handleMouseDown);
+                this.canvas.addEventListener('mousemove', this.handleMouseMove);
+                this.canvas.addEventListener('mouseup', this.handleMouseUp);
+                this.canvas.addEventListener('mouseleave', this.handleMouseUp);
+                this.canvas.addEventListener('wheel', this.handleWheel, { passive: false });
+                
+                // 添加点击事件
+                this.canvas.addEventListener('click', this.handleClick);
+                this.canvas.addEventListener('mousemove', this.handleMouseMoveHover);
+                
+                // 触摸事件
+                this.canvas.addEventListener('touchstart', this.handleTouchStart, { passive: false });
+                this.canvas.addEventListener('touchmove', this.handleTouchMove, { passive: false });
+                this.canvas.addEventListener('touchend', this.handleTouchEnd);
+                
+                // 窗口大小变化
+                window.addEventListener('resize', () => this.draw());
+                
+                // 文件上传事件
+                document.getElementById('fileInput').addEventListener('input', (e) => {
+                    const file = e.target.files[0];
+                    console.log(file);
+                    if (!file) return;
+                    
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        try {
+                            const data = JSON.parse(event.target.result);
+                            this.loadCustomMap(data);
+                        } catch (error) {
+                            console.error('解析JSON失败', error);
+                            alert('加载地图失败：JSON格式错误');
+                        }
+                    };
+                    reader.readAsText(file);
+                });
+            }
+            
+            /**
+             * 加载自定义地图数据
+             * @param {Object} data - 地图数据
+             */
+            loadCustomMap(data) {
+                // 验证数据格式
+                if (!data.size || !data.size.w || !data.size.h || 
+                    !Array.isArray(data.doors)) {
+                    alert('地图数据格式不正确');
+                    return;
+                }
+                
+                // 更新全局尺寸
+                cols = data.size.w;
+                rows = data.size.h;
+                
+                // 创建新地图
+                hexMap = new HexMap(cols, rows, BASE_HEX_SIZE);
+                
+                // 创建房间位置映射表 (row-col作为键)
+                const roomMap = new Map();
+                hexMap.rooms.forEach(room => {
+                    const key = `${room.row}-${room.col}`;
+                    roomMap.set(key, room);
+                });
+                
+                // 处理自定义门数据
+                for (const doorData of data.doors) {
+                    if (!doorData.room1 || !doorData.room2) continue;
+                    
+                    // 获取两个房间对象
+                    const room1Key = `${doorData.room1.r}-${doorData.room1.c}`;
+                    const room2Key = `${doorData.room2.r}-${doorData.room2.c}`;
+                    const room1 = roomMap.get(room1Key);
+                    const room2 = roomMap.get(room2Key);
+                    
+                    if (!room1 || !room2) continue;
+                    
+                    // 在hexMap.doors中查找对应的门
+                    const foundDoor = hexMap.doors.find(door => 
+                        (door.room1 === room1 && door.room2 === room2) || 
+                        (door.room1 === room2 && door.room2 === room1)
+                    );
+                    
+                    // 如果找到对应的门，设置为可用
+                    if (foundDoor) {
+                        console.log(`Found door from ${foundDoor.room1.id} to ${foundDoor.room2.id}`);
+                        foundDoor.isUsable = true;
+                        
+                        // 同时更新两个房间中的门引用
+                        room1.doors.forEach(d => {
+                            if (d === foundDoor) d.isUsable = true;
+                        });
+                        room2.doors.forEach(d => {
+                            if (d === foundDoor) d.isUsable = true;
+                        });
+                    }
+                }
+                
+                // 重绘
+                this.draw();
+                alert('地图加载成功！');
+                // 重置文件输入
+                document.getElementById('fileInput').value = '';
+            }
+            
+            /**
+             * 调整缩放
+             * @param {number} delta - 缩放变化量
+             */
+            adjustZoom(delta) {
+                const newScale = Math.min(this.MAX_SCALE, Math.max(this.MIN_SCALE, this.scale + delta));
+                
+                // 以画布中心为缩放中心
+                const centerX = this.canvas.width / 2;
+                const centerY = this.canvas.height / 2;
+                
+                // 调整偏移量，使缩放中心保持不变
+                this.offsetX = centerX - (centerX - this.offsetX) * (newScale / this.scale);
+                this.offsetY = centerY - (centerY - this.offsetY) * (newScale / this.scale);
+                
+                this.scale = newScale;
+                this.draw();
+            }
+            
+            /**
+             * 重置视图
+             */
+            resetView() {
+                this.scale = 1.0;
+                this.offsetX = 0;
+                this.offsetY = 0;
+                this.draw();
+            }
+            
+            // 鼠标按下事件
+            handleMouseDown(e) {
+                this.isDragging = true;
+                this.startX = e.clientX - this.offsetX;
+                this.startY = e.clientY - this.offsetY;
+                this.canvas.style.cursor = 'grabbing';
+            }
+            
+            // 鼠标移动事件
+            handleMouseMove(e) {
+                if (!this.isDragging) return;
+                
+                this.offsetX = e.clientX - this.startX;
+                this.offsetY = e.clientY - this.startY;
+                this.draw();
+            }
+            
+            // 鼠标释放事件
+            handleMouseUp() {
+                this.isDragging = false;
+                this.canvas.style.cursor = this.mode === 'edit' ? 'pointer' : 'grab';
+            }
+            
+            // 鼠标滚轮事件
+            handleWheel(e) {
+                e.preventDefault();
+                
+                const delta = (e.deltaY > 0 ? -0.1 : 0.1) * this.SCALE_MULTIPLIER;
+                const newScale = Math.min(this.MAX_SCALE, Math.max(this.MIN_SCALE, this.scale + delta));
+                
+                // 计算缩放中心点
+                const rect = this.canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                
+                // 调整偏移量，使缩放中心保持不变
+                this.offsetX = mouseX - (mouseX - this.offsetX) * (newScale / this.scale);
+                this.offsetY = mouseY - (mouseY - this.offsetY) * (newScale / this.scale);
+                
+                this.scale = newScale;
+                this.draw();
+            }
+            
+            // 触摸开始事件
+            handleTouchStart(e) {
+                e.preventDefault();
+                
+                if (e.touches.length === 1) {
+                    // 单指触摸 - 开始拖动
+                    this.isDragging = true;
+                    this.startX = e.touches[0].clientX - this.offsetX;
+                    this.startY = e.touches[0].clientY - this.offsetY;
+                } else if (e.touches.length === 2) {
+                    // 双指触摸 - 开始缩放
+                    this.isDragging = false;
+                    this.initialPinchDistance = this.getDistance(e.touches[0], e.touches[1]);
+                    this.initialScale = this.scale;
+                }
+            }
+            
+            // 触摸移动事件
+            handleTouchMove(e) {
+                e.preventDefault();
+                
+                if (this.isDragging && e.touches.length === 1) {
+                    // 单指移动 - 拖动
+                    this.offsetX = e.touches[0].clientX - this.startX;
+                    this.offsetY = e.touches[0].clientY - this.startY;
+                    this.draw();
+                } else if (e.touches.length === 2) {
+                    // 双指移动 - 缩放
+                    const currentDistance = this.getDistance(e.touches[0], e.touches[1]);
+                    
+                    if (this.initialPinchDistance !== null) {
+                        const scaleFactor = currentDistance / this.initialPinchDistance;
+                        this.scale = Math.min(this.MAX_SCALE, Math.max(this.MIN_SCALE, this.initialScale * scaleFactor));
+                        
+                        // 计算缩放中心点
+                        const rect = this.canvas.getBoundingClientRect();
+                        const touch1 = e.touches[0];
+                        const touch2 = e.touches[1];
+                        const centerX = (touch1.clientX + touch2.clientX) / 2 - rect.left;
+                        const centerY = (touch1.clientY + touch2.clientY) / 2 - rect.top;
+                        
+                        // 调整偏移量，使缩放中心保持不变
+                        this.offsetX = centerX - (centerX - this.offsetX) * (this.scale / this.initialScale);
+                        this.offsetY = centerY - (centerY - this.offsetY) * (this.scale / this.initialScale);
+                        
+                        this.draw();
+                    }
+                }
+            }
+            
+            // 触摸结束事件
+            handleTouchEnd(e) {
+                if (e.touches.length === 0) {
+                    // 所有手指离开
+                    this.isDragging = false;
+                    this.initialPinchDistance = null;
+                } else if (e.touches.length === 1) {
+                    // 只剩一根手指，转为拖动模式
+                    this.isDragging = true;
+                    this.startX = e.touches[0].clientX - this.offsetX;
+                    this.startY = e.touches[0].clientY - this.offsetY;
+                    this.initialPinchDistance = null;
+                }
+            }
+            
+            /**
+             * 计算两点间距离
+             * @param {Touch} touch1 - 第一个触摸点
+             * @param {Touch} touch2 - 第二个触摸点
+             * @returns {number} 两点间距离
+             */
+            getDistance(touch1, touch2) {
+                const dx = touch1.clientX - touch2.clientX;
+                const dy = touch1.clientY - touch2.clientY;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+            
+            /**
+             * 处理点击事件（编辑模式下）
+             * @param {MouseEvent} e - 鼠标事件
+             */
+            handleClick(e) {
+                if (this.mode !== 'edit' || !hexMap) return;
+                
+                // 获取鼠标在画布上的位置
+                const rect = this.canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                
+                // 转换到地图坐标系（考虑缩放和平移）
+                const x = (mouseX - this.offsetX) / this.scale;
+                const y = (mouseY - this.offsetY) / this.scale;
+                
+                // 设定一个阈值（20像素，但考虑缩放）
+                const threshold = 20 / this.scale;
+                
+                // 检查是否点击到了门
+                let clickedDoor = null;
+                for (const door of hexMap.doors) {
+                    if (door.isPointInside(x, y, threshold)) {
+                        clickedDoor = door;
+                        break;
+                    }
+                }
+                
+                if (clickedDoor) {
+                    // 切换门的可用状态
+                    clickedDoor.isUsable = !clickedDoor.isUsable;
+                    this.draw();
+                }
+            }
+            
+            /**
+             * 处理鼠标移动悬停效果
+             * @param {MouseEvent} e - 鼠标事件
+             */
+            handleMouseMoveHover(e) {
+                if (!hexMap || this.mode !== 'edit') return;
+                
+                // 获取鼠标在画布上的位置
+                const rect = this.canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                
+                // 转换到地图坐标系
+                const x = (mouseX - this.offsetX) / this.scale;
+                const y = (mouseY - this.offsetY) / this.scale;
+                
+                // 设定阈值
+                const doorThreshold = 20 / this.scale;
+                const roomThreshold = BASE_HEX_SIZE / this.scale;
+                
+                // 清除所有悬停状态
+                hexMap.clearHover();
+                
+                // 检查门悬停
+                let hoverDetected = false;
+                for (const door of hexMap.doors) {
+                    if (door.isPointInside(x, y, doorThreshold)) {
+                        door.hover = true;
+                        hoverDetected = true;
+                        this.canvas.style.cursor = 'pointer';
+                        break;
+                    }
+                }
+                
+                // 检查房间悬停
+                if (!hoverDetected) {
+                    for (const room of hexMap.rooms) {
+                        if (room.isPointInside(x, y)) {
+                            room.hover = true;
+                            hoverDetected = true;
+                            this.canvas.style.cursor = 'pointer';
+                            break;
+                        }
+                    }
+                }
+                
+                // 如果没有悬停在可交互元素上
+                if (!hoverDetected) {
+                    this.canvas.style.cursor = this.isDragging ? 'grabbing' : 'grab';
+                }
+                
+                // 重绘以更新悬停效果
+                this.draw();
+            }
+            
+            /**
+             * 执行绘制
+             */
+            draw() {
+                // 设置canvas尺寸为窗口大小
+                this.canvas.width = window.innerWidth;
+                this.canvas.height = window.innerHeight;
+                
+                // 清除画布
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                
+                // 绘制背景网格
+                this.drawBackground();
+                
+                // 设置缩放和平移
+                this.ctx.save();
+                this.ctx.translate(this.offsetX, this.offsetY);
+                this.ctx.scale(this.scale, this.scale);
+                
+                // 调用外部绘制回调，并传递当前模式
+                if (this.drawCallback) {
+                    this.drawCallback(this.ctx, this.mode);
+                }
+                
+                // 恢复变换
+                this.ctx.restore();
+            }
+            
+            /**
+             * 绘制背景网格
+             */
+            drawBackground() {
+                const ctx = this.ctx;
+                const width = this.canvas.width;
+                const height = this.canvas.height;
+                
+                ctx.fillStyle = '#0d1520';
+                ctx.fillRect(0, 0, width, height);
+                
+                // 绘制网格线
+                ctx.strokeStyle = 'rgba(52, 152, 219, 0.1)';
+                ctx.lineWidth = 1;
+                
+                // 垂直线
+                for (let x = 0; x <= width; x += 30) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, height);
+                    ctx.stroke();
+                }
+                
+                // 水平线
+                for (let y = 0; y <= height; y += 30) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(width, y);
+                    ctx.stroke();
+                }
+            }
+        }
+
+        // 全局变量
+        let canvas, ctx;
+        let cols = 10, rows = 7; // 默认尺寸
+        let hexMap = null;
+
+        // 初始化
+        window.onload = function() {
+            canvas = document.getElementById('gridCanvas');
+            ctx = canvas.getContext('2d');
+            
+            // 加载地图数据的函数
+            function createDefaultHexMap() {
+                hexMap = new HexMap(cols, rows, BASE_HEX_SIZE);
+                
+                // 默认启用一些门
+                const doorsToEnable = [
+                    {room1: {c:0, r:0}, room2: {c:1, r:0}},
+                    {room1: {c:0, r:0}, room2: {c:0, r:1}},
+                    {room1: {c:1, r:0}, room2: {c:1, r:1}},
+                    {room1: {c:0, r:1}, room2: {c:1, r:1}},
+                    {room1: {c:1, r:1}, room2: {c:2, r:1}}
+                ];
+                
+                for (const doorData of doorsToEnable) {
+                    const room1 = hexMap.getRoom(doorData.room1.c, doorData.room1.r);
+                    const room2 = hexMap.getRoom(doorData.room2.c, doorData.room2.r);
+                    
+                    if (room1 && room2) {
+                        // 查找连接这两个房间的门
+                        const door = hexMap.doors.find(d => 
+                            (d.room1 === room1 && d.room2 === room2) || 
+                            (d.room1 === room2 && d.room2 === room1)
+                        );
+                        
+                        if (door) {
+                            door.isUsable = true;
+                        }
+                    }
+                }
+            }
+            
+            // 绘制回调函数
+            function drawCallback(ctx, mode) {
+                if (hexMap) {
+                    hexMap.draw(ctx, mode);
+                }
+            }
+            
+            // 创建UI控制器
+            const uiController = new UIController(
+                canvas, 
+                drawCallback,
+                createDefaultHexMap
+            );
+            
+            // 初始化UI控制器
+            uiController.init();
+        };
+        
+
+    </script>
+</body>
+</html>
