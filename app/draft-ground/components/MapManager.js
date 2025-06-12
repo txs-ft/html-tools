@@ -15,7 +15,7 @@ export default class MapManager {
     this.container.addEventListener('mousedown', this.startDrag.bind(this));
     document.addEventListener('mousemove', this.drag.bind(this));
     document.addEventListener('mouseup', this.endDrag.bind(this));
-    this.container.addEventListener('wheel', this.handleZoom.bind(this));
+    this.container.addEventListener('wheel', this.handleZoom.bind(this), { passive: false });
     
     // 移动端触摸事件
     this.container.addEventListener('touchstart', this.handleTouchStart.bind(this));
@@ -69,15 +69,38 @@ export default class MapManager {
   handlePinchStart(e) {
     this.pinchStartDistance = this.getTouchDistance(e);
     this.startScale = this.scale;
+    this.startPosition = { ...this.position };
+    
+    // 计算双指中心点
+    const t1 = e.touches[0];
+    const t2 = e.touches[1];
+    this.pinchCenter = {
+      x: (t1.clientX + t2.clientX) / 2,
+      y: (t1.clientY + t2.clientY) / 2
+    };
   }
 
   handlePinch(e) {
-    if (!this.pinchStartDistance) return;
+    if (!this.pinchStartDistance || !this.pinchCenter) return;
     
     const currentDistance = this.getTouchDistance(e);
     const scaleFactor = currentDistance / this.pinchStartDistance;
-    this.scale = this.startScale * scaleFactor;
-    this.scale = Math.max(0.5, Math.min(this.scale, 3)); // 限制缩放范围
+    const newScale = this.startScale * scaleFactor;
+    const clampedScale = Math.max(0.5, Math.min(newScale, 3));
+    
+    // 计算缩放中心在容器内的坐标
+    const rect = this.container.getBoundingClientRect();
+    const containerX = this.pinchCenter.x - rect.left;
+    const containerY = this.pinchCenter.y - rect.top;
+    
+    // 计算缩放中心的世界坐标
+    const worldX = (containerX - this.startPosition.x) / this.startScale;
+    const worldY = (containerY - this.startPosition.y) / this.startScale;
+    
+    // 计算新的位置
+    this.position.x = containerX - worldX * clampedScale;
+    this.position.y = containerY - worldY * clampedScale;
+    this.scale = clampedScale;
     
     this.updateTransform();
   }
@@ -88,13 +111,27 @@ export default class MapManager {
     return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
   }
 
-  // 滚轮缩放
+  // 滚轮缩放 - 已修复以鼠标为中心缩放
   handleZoom(e) {
     e.preventDefault();
     const zoomIntensity = 0.1;
     const wheelDelta = e.deltaY < 0 ? 1 : -1;
-    this.scale += wheelDelta * zoomIntensity;
-    this.scale = Math.max(0.5, Math.min(this.scale, 3)); // 限制缩放范围
+    const newScale = this.scale + wheelDelta * zoomIntensity;
+    const clampedScale = Math.max(0.5, Math.min(newScale, 3));
+    
+    // 获取鼠标在容器内的坐标
+    const rect = this.container.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    
+    // 计算鼠标位置的世界坐标
+    const worldX = (mouseX - this.position.x) / this.scale;
+    const worldY = (mouseY - this.position.y) / this.scale;
+    
+    // 计算新的位置
+    this.position.x = mouseX - worldX * clampedScale;
+    this.position.y = mouseY - worldY * clampedScale;
+    this.scale = clampedScale;
     
     this.updateTransform();
   }
