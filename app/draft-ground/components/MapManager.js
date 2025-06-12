@@ -7,7 +7,7 @@ export default class MapManager {
     this.isDragging = false;
     this.lastPos = { x: 0, y: 0 };
     
-    this.initEventListeners();
+    //this.initEventListeners();
   }
 
   initEventListeners() {
@@ -52,7 +52,8 @@ export default class MapManager {
   handleTouchStart(e) {
     if (e.touches.length === 1) {
       this.startDrag(e.touches[0]);
-    } else if (e.touches.length === 2) {
+    } // 暫時廢了縮放功能
+     else if (e.touches.length === 2) {
       this.handlePinchStart(e);
     }
   }
