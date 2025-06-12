@@ -1,6 +1,7 @@
 const COLORS = ['noun', 'verb', 'adj', 'prep', 'adv', 'other'];
 const DRAG_THRESHOLD = 10;
 const TAP_DELAY = 300; // 點擊最大延時
+const GRID_SIZE = 30; // 新增：网格大小（与CSS中的网格大小一致）
 
 export default class WordBlock {
   constructor(text, container) {
@@ -163,6 +164,7 @@ export default class WordBlock {
     
     if (distance > DRAG_THRESHOLD) {
       this.element.style.pointerEvents = 'none';
+      this.hasDragged = true; // 标记为实际拖动
     }
     
     const containerPoint = this.viewportToContainer(clientX, clientY);
@@ -180,6 +182,17 @@ export default class WordBlock {
     this.isDragging = false;
     this.element.style.pointerEvents = 'auto';
     this.element.classList.remove('dragging'); // 移除拖动样式
+    
+    // 新增：如果发生了实际拖动，则对齐到网格（仅Y轴）
+    if (this.hasDragged) {
+      // 计算最近的网格线位置
+      const gridY = Math.round(this.position.y / GRID_SIZE) * GRID_SIZE;
+      this.position.y = gridY;
+      this.updatePosition();
+    }
+    
+    // 重置拖动标记
+    this.hasDragged = false;
     
     // 移除事件监听
     document.removeEventListener('mousemove', this.drag);
