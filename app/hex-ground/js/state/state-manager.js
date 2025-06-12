@@ -1,6 +1,7 @@
 // 路徑：hex-ground/js/state/state-manager.js
 
 import appState from './app-state.js';
+import { ModeManager } from '../core/mode-manager.js';
 
 /**
  * 状态管理器，提供状态操作的便捷方法
@@ -8,6 +9,7 @@ import appState from './app-state.js';
 class StateManager {
     constructor() {
         this.state = appState;
+        this.modeManager = new ModeManager();
     }
     
     /**
@@ -84,6 +86,104 @@ class StateManager {
         
         door.isUsable = !door.isUsable;
         this.set({}); // 触发状态更新
+    }
+
+    /**
+     * 注册新模式
+     * @param {string} name - 模式名称
+     * @param {object} config - 模式配置
+     */
+    registerMode(name, config) {
+        this.modeManager.registerMode(name, config);
+    }
+
+    /**
+     * 切换到指定模式
+     * @param {string} name - 模式名称
+     */
+    switchMode(name) {
+        this.modeManager.switchToMode(name);
+        this.set({ mode: name });
+    }
+
+    /**
+     * 处理点击事件
+     * @param {Event} event - 点击事件
+     */
+    handleClick(event) {
+        this.modeManager.handleClick(event);
+    }
+
+    /**
+     * 处理鼠标移动事件
+     * @param {Event} event - 鼠标移动事件
+     */
+    handleMouseMove(event) {
+        this.modeManager.handleMouseMove(event);
+    }
+
+    /**
+     * 處理鼠標按下事件
+     * @param {Event} event - 鼠標按下事件
+     */
+    handleMouseDown(event) {
+        this.modeManager.handleMouseDown(event);
+    }
+
+    /**
+     * 处理鼠标移动事件
+     * @param {Event} event - 鼠标移动事件
+     */
+    handleMouseMove(event) {
+        this.modeManager.handleMouseMove(event);
+    }
+
+    /**
+     * 處理鼠標鬆開事件
+     * @param {Event} event - 鼠標鬆開事件
+     */
+    handleMouseUp(event) {
+        this.modeManager.handleMouseUp(event);
+    }
+
+    /**
+     * 處理鼠標離開事件
+     * @param {Event} event - 鼠標離開事件
+     */
+    handleMouseLeave(event) {
+        this.modeManager.handleMouseLeave(event);
+    }
+
+    /**
+     * 處理鼠輪事件
+     * @param {Event} event - 鼠輪事件
+     */
+    handleWheel(event) {
+        this.modeManager.handleWheel(event);
+    }
+
+    /**
+     * 處理觸摸開始事件
+     * @param {Event} event - 觸摸開始事件
+     */
+    handleTouchStart(event) {
+        this.modeManager.handleTouchStart(event);
+    }
+
+    /**
+     * 處理觸摸移動事件
+     * @param {Event} event - 觸摸移動事件
+     */
+    handleTouchMove(event) {
+        this.modeManager.handleTouchMove(event);
+    }
+
+    /**
+     * 處理觸摸結束事件
+     * @param {Event} event - 觸摸結束事件
+     */
+    handleTouchEnd(event) {
+        this.modeManager.handleTouchEnd(event);
     }
 }
 

@@ -8,6 +8,7 @@
 		"editor.letterSpacing": 2,
 		"editor.fontFamily": "LXGW WenKai Mono Light",
 		"editor.fontSize": 25,
-		"editor.wordWrap": "on"
-	}
+		"editor.wordWrap": "on",
+		"liveServer.settings.host": "0.0.0.0"
+	},
 }

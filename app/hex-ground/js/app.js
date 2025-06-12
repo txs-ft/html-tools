@@ -1,6 +1,5 @@
 // 路径：hex-ground/js/app.js
 import {UIController} from './ui/ui-controller.js';
-import {MapRenderer} from './ui/map-renderer.js';
 import { HexMap } from './core/hex-map.js';
 import stateManager from './state/state-manager.js';
 

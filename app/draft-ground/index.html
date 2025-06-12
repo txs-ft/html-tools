@@ -1,0 +1,35 @@
+<!-- 路徑： draft-ground/index.html-->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Draft-Ground 句子重组工具</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="script.js"></script>
+  <script src="https://unpkg.com/vconsole@3.3.4/dist/vconsole.min.js"></script> 
+  <script>
+    new VConsole();
+  </script>
+</head>
+<body>
+  <!-- 控制栏 -->
+  <div class="controls">
+    <button id="toggle-input">📝</button>
+    <button id="reset-all">⟳</button>
+  </div>
+  
+  <!-- 输入面板 -->
+  <div id="input-panel" class="hidden">
+    <textarea id="sentence-input" placeholder="粘贴句子零件（用/分隔）"></textarea>
+    <button id="generate-blocks">生成词条</button>
+  </div>
+  
+  <!-- 地图容器 -->
+  <div id="map-container">
+    <div id="map-grid"></div>
+  </div>
+
+  
+</body>
+</html>

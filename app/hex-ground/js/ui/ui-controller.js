@@ -25,7 +25,6 @@ export class UIController {
         this.isDragging = false;
         this.initialPinchDistance = null;
         this.initialScale = 1.0;
-        this.mode = 'game'; // 'game' 或 'edit'
         this.hexMap = null;
         
         // 配置参数
@@ -44,11 +43,16 @@ export class UIController {
         this.handleTouchEnd = this.handleTouchEnd.bind(this);
         this.handleClick = this.handleClick.bind(this);
         this.handleMouseMoveHover = this.handleMouseMoveHover.bind(this);
+
         this.adjustZoom = this.adjustZoom.bind(this);
         this.resetView = this.resetView.bind(this);
         this.initLoadMap = this.initLoadMap.bind(this);
         this.initSaveMap = this.initSaveMap.bind(this);
         this.editMap = this.editMap.bind(this);
+
+        this.registerModes();
+        stateManager.switchMode('game');
+
     }
     
     /**
@@ -83,6 +87,51 @@ export class UIController {
         setTimeout(() => {
             document.querySelector('.info').style.opacity = '0';
         }, 5000);
+    }
+
+    registerModes() {
+
+        stateManager.registerMode('game', {
+            onEnter: () => {
+                document.getElementById('editMap').classList.remove('active');
+                document.getElementById('modeIndicator').textContent = '游戏模式';
+                document.getElementById('modeIndicator').classList.remove('edit');
+                document.getElementById('instructions').style.display = 'none';
+                document.getElementById('instructions').style.opacity = '1';
+            },
+            onMouseDown: (e) => this.handleMouseDown(e),
+            onMouseMove: (e) => this.handleMouseMove(e),
+            onMouseUp: (e) => this.handleMouseUp(e),
+            onWheel: (e) => this.handleWheel(e),
+            onTouchStart: (e) => this.handleTouchStart(e),
+            onTouchMove: (e) => this.handleTouchMove(e),
+            onTouchEnd: (e) => this.handleTouchEnd(e)
+            //onClick: undefined, // 因為在遊戲模式下，暫無需處理點擊事件
+
+        })
+
+        stateManager.registerMode('edit', {
+            onEnter: () => {
+                document.getElementById('editMap').classList.add('active');
+                document.getElementById('modeIndicator').textContent = '编辑模式';
+                document.getElementById('modeIndicator').classList.add('edit');
+                document.getElementById('instructions').style.display = 'block';
+                
+                // 5秒后淡出说明
+                setTimeout(() => {
+                    document.getElementById('instructions').style.opacity = '0';
+                }, 5000);
+            },
+            onMouseDown: (e) => this.handleMouseDown(e),
+            onMouseMove: (e) => this.handleMouseMove_Edit(e),
+            onMouseUp: (e) => this.handleMouseUp(e),
+            onWheel: (e) => this.handleWheel(e),
+            onTouchStart: (e) => this.handleTouchStart(e),
+            onTouchMove: (e) => this.handleTouchMove(e),
+            onTouchEnd: (e) => this.handleTouchEnd(e),
+            onClick: (e) => this.handleClick(e),
+        });
+        
     }
 
     /**
@@ -143,26 +192,11 @@ export class UIController {
      * 切换地图编辑模式
      */
     editMap() {
-        if (this.mode === 'game') {
-            this.mode = 'edit';
-            document.getElementById('editMap').classList.add('active');
-            document.getElementById('modeIndicator').textContent = '编辑模式';
-            document.getElementById('modeIndicator').classList.add('edit');
-            document.getElementById('instructions').style.display = 'block';
-            
-            // 5秒后淡出说明
-            setTimeout(() => {
-                document.getElementById('instructions').style.opacity = '0';
-            }, 5000);
+        if (stateManager.modeManager.currentMode === 'game') {
+            stateManager.switchMode('edit');
         } else {
-            this.mode = 'game';
-            document.getElementById('editMap').classList.remove('active');
-            document.getElementById('modeIndicator').textContent = '游戏模式';
-            document.getElementById('modeIndicator').classList.remove('edit');
-            document.getElementById('instructions').style.display = 'none';
-            document.getElementById('instructions').style.opacity = '1';
+            stateManager.switchMode('game');
         }
-        
         // 清除所有悬停状态
         if (this.hexMap) this.hexMap.clearHover();
         this.draw();
@@ -173,20 +207,20 @@ export class UIController {
      */
     setupEventListeners() {
         // 鼠标事件
-        this.canvas.addEventListener('mousedown', this.handleMouseDown);
-        this.canvas.addEventListener('mousemove', this.handleMouseMove);
-        this.canvas.addEventListener('mouseup', this.handleMouseUp);
-        this.canvas.addEventListener('mouseleave', this.handleMouseUp);
-        this.canvas.addEventListener('wheel', this.handleWheel, { passive: false });
+        this.canvas.addEventListener('mousedown', (e) => stateManager.handleMouseDown(e));
+        this.canvas.addEventListener('mousemove', (e) => stateManager.handleMouseMove(e));
+        this.canvas.addEventListener('mouseup', (e) => stateManager.handleMouseUp(e));
+        this.canvas.addEventListener('mouseleave', (e) => stateManager.handleMouseLeave(e));
+        this.canvas.addEventListener('wheel', (e) => stateManager.handleWheel(e), { passive: false });
         
         // 添加点击事件
-        this.canvas.addEventListener('click', this.handleClick);
-        this.canvas.addEventListener('mousemove', this.handleMouseMoveHover);
+        this.canvas.addEventListener('click', (e) => stateManager.handleClick(e));
+        // this.canvas.addEventListener('mousemove', this.handleMouseMoveHover);
         
         // 触摸事件
-        this.canvas.addEventListener('touchstart', this.handleTouchStart, { passive: false });
-        this.canvas.addEventListener('touchmove', this.handleTouchMove, { passive: false });
-        this.canvas.addEventListener('touchend', this.handleTouchEnd);
+        this.canvas.addEventListener('touchstart', (e) => stateManager.handleTouchStart(e), { passive: false });
+        this.canvas.addEventListener('touchmove', (e) => stateManager.handleTouchMove(e), { passive: false });
+        this.canvas.addEventListener('touchend', (e) => stateManager.handleTouchEnd(e));
         
         // 窗口大小变化
         window.addEventListener('resize', () => this.draw());
@@ -304,7 +338,7 @@ export class UIController {
      * 执行绘制
      */
     draw() {
-        this.renderer.draw(this.mode, this.offsetX, this.offsetY, this.scale);
+        this.renderer.draw(stateManager.modeManager.currentMode, this.offsetX, this.offsetY, this.scale);
     }
     
     // 鼠标按下事件
@@ -327,7 +361,7 @@ export class UIController {
     // 鼠标释放事件
     handleMouseUp() {
         this.isDragging = false;
-        this.canvas.style.cursor = this.mode === 'edit' ? 'pointer' : 'grab';
+        this.canvas.style.cursor = stateManager.modeManager.currentMode === 'edit' ? 'pointer' : 'grab';
     }
     
     // 鼠标滚轮事件
@@ -432,7 +466,7 @@ export class UIController {
      * @param {MouseEvent} e - 鼠标事件
      */
     handleClick(e) {
-        if (this.mode !== 'edit' || !this.hexMap) return;
+        if (!this.hexMap) return;
         
         // 获取鼠标在画布上的位置
         const rect = this.canvas.getBoundingClientRect();
@@ -461,13 +495,72 @@ export class UIController {
             this.draw();
         }
     }
+
+    /**
+     * 處理編輯模式下的鼠標移動事件
+     * @param {MouseEvent} e - 鼠標事件
+     */
+    handleMouseMove_Edit(e) {
+
+        if (!this.isDragging) return;
+        
+        this.offsetX = e.clientX - this.startX;
+        this.offsetY = e.clientY - this.startY;
+
+        // 获取鼠标在画布上的位置
+        const rect = this.canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        // 转换到地图坐标系
+        const x = (mouseX - this.offsetX) / this.scale;
+        const y = (mouseY - this.offsetY) / this.scale;
+        
+        // 设定阈值
+        const doorThreshold = 20 / this.scale;
+        const roomThreshold = this.BASE_HEX_SIZE / this.scale;
+        
+        // 清除所有悬停状态
+        this.hexMap.clearHover();
+        
+        // 检查门悬停
+        let hoverDetected = false;
+        for (const door of this.hexMap.doors) {
+            if (door.isPointInside(x, y, doorThreshold)) {
+                door.hover = true;
+                hoverDetected = true;
+                this.canvas.style.cursor = 'pointer';
+                break;
+            }
+        }
+        
+        // 检查房间悬停
+        if (!hoverDetected) {
+            for (const room of this.hexMap.rooms) {
+                if (room.isPointInside(x, y)) {
+                    room.hover = true;
+                    hoverDetected = true;
+                    this.canvas.style.cursor = 'pointer';
+                    break;
+                }
+            }
+        }
+        
+        // 如果没有悬停在可交互元素上
+        if (!hoverDetected) {
+            this.canvas.style.cursor = this.isDragging ? 'grabbing' : 'grab';
+        }
+        
+        // 重绘以更新悬停效果
+        this.draw();
+    }
     
     /**
-     * 处理鼠标移动悬停效果
+     * [OBSOLETE] 处理鼠标移动悬停效果
      * @param {MouseEvent} e - 鼠标事件
      */
     handleMouseMoveHover(e) {
-        if (!this.hexMap || this.mode !== 'edit') return;
+        if (!this.hexMap || stateManager.modeManager.currentMode !== 'edit') return;
         
         // 获取鼠标在画布上的位置
         const rect = this.canvas.getBoundingClientRect();
