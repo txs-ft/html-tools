@@ -20,11 +20,9 @@ export default class InputPanel {
 
   show() {
     this.panel.classList.remove('hidden');
-    this.toggleButton.textContent = '隐藏输入';
   }
 
   hide() {
     this.panel.classList.add('hidden');
-    this.toggleButton.textContent = '显示输入';
   }
 }

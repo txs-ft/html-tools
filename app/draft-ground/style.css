@@ -74,7 +74,8 @@ body {
 /* 拖動時視覺反饋 */
 .word-block.dragging {
   z-index: 1000;
-  box-shadow: 0 0 15px rgba(0,0,0,0.3);
+  box-shadow: 0 0 15px rgba(255,255,255,0.5);
+  transition: box-shadow 0.2s;
 }
 
 /* 添加移動端點擊反饋 */

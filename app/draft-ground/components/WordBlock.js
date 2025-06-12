@@ -8,11 +8,13 @@ export default class WordBlock {
     this.container = container;
     this.colorIndex = 0;
     this.isDragging = false;
+    this.hasDragged = false;
     this.offset = { x: 0, y: 0 };
     this.position = this.getRandomPosition();
-    this.inverseMatrix = null;
     this.dragStartPosition = { x: 0, y: 0 };
     this.dragStartTime = 0;
+    this.inverseMatrix = null;
+    this.containerRect = this.container.getBoundingClientRect(); // 新增：容器布局位置
     
     // 事件處理器綁定
     this.handleClick = this.handleClick.bind(this);
@@ -52,9 +54,15 @@ export default class WordBlock {
   }
 
   viewportToContainer(x, y) {
-    if (!this.inverseMatrix) return { x, y };
+    // 始终考虑容器布局位置
+    const baseX = x - this.containerRect.left;
+    const baseY = y - this.containerRect.top;
     
-    const point = new DOMPoint(x, y);
+    if (!this.inverseMatrix || this.inverseMatrix.isIdentity) {
+      return { x: baseX, y: baseY };
+    }
+    
+    const point = new DOMPoint(baseX, baseY);
     const transformed = point.matrixTransform(this.inverseMatrix);
     return { x: transformed.x, y: transformed.y };
   }
@@ -109,28 +117,40 @@ export default class WordBlock {
   }
 
   startDrag(e) {
-    // 阻止移動端點擊事件觸發
     if (e.type === 'touchstart' && e.touches.length > 1) return;
-    
     e.preventDefault();
     this.isDragging = true;
-    
+    this.hasDragged = false;
+    // 更新容器布局和变换矩阵
+    this.containerRect = this.container.getBoundingClientRect();
     this.inverseMatrix = this.getInverseMatrix();
-    
     const clientX = e.clientX || e.touches[0].clientX;
     const clientY = e.clientY || e.touches[0].clientY;
     this.dragStartPosition = { x: clientX, y: clientY };
+    // 获取WordBlock中心在容器坐标系中的实际位置
+    const rect = this.element.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
     
+    // 将中心点转换到容器坐标系
+    const containerCenter = this.viewportToContainer(centerX, centerY);
+    
+    // 计算点击位置与中心点的偏移量
     const containerPoint = this.viewportToContainer(clientX, clientY);
     this.offset = {
-      x: containerPoint.x - this.position.x,
-      y: containerPoint.y - this.position.y
+      x: containerPoint.x - containerCenter.x,
+      y: containerPoint.y - containerCenter.y
     };
+    // 添加拖动状态样式
+    this.element.classList.add('dragging');
+    
+    // 事件监听
     document.addEventListener('mousemove', this.drag);
     document.addEventListener('touchmove', this.drag, { passive: false });
     document.addEventListener('mouseup', this.endDrag);
     document.addEventListener('touchend', this.endDrag);
   }
+
 
   drag(e) {
     if (!this.isDragging) return;
@@ -159,7 +179,9 @@ export default class WordBlock {
     
     this.isDragging = false;
     this.element.style.pointerEvents = 'auto';
+    this.element.classList.remove('dragging'); // 移除拖动样式
     
+    // 移除事件监听
     document.removeEventListener('mousemove', this.drag);
     document.removeEventListener('touchmove', this.drag);
     document.removeEventListener('mouseup', this.endDrag);
